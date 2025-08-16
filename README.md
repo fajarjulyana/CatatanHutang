@@ -62,7 +62,7 @@ Aplikasi web berbasis **Python + Flask + SQLite** untuk mencatat dan mengelola h
 
 
 5. **Akses aplikasi**:
-   Buka browser dan kunjungi [http://127.0.0.1:5000](http://127.0.0.1:5003)
+   Buka browser dan kunjungi [http://127.0.0.1:5003](http://127.0.0.1:5003)
 
 ---
 
