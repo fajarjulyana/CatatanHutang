@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Hutang - Fajar Mandiri Store{% endblock %}
+
+
+
+{% block content %}
+<!-- Alert untuk hutang jatuh tempo -->
+{% if overdue_count > 0 %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    <strong>Perhatian!</strong> Ada {{ overdue_count }} hutang yang sudah jatuh tempo dan belum dibayar.
+    <a href="?status=overdue" class="alert-link">Lihat hutang terlambat</a>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<!-- Alert untuk hutang yang akan jatuh tempo dalam 3 hari -->
+{% if due_soon_count > 0 %}
+<div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <i class="fas fa-clock me-2"></i>
+    <strong>Pengingat:</strong> {{ due_soon_count }} hutang akan jatuh tempo dalam 3 hari ke depan.
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-chart-line me-2"></i>
+            Dashboard Hutang Fajar Mandiri Store
+        </h1>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-danger">
+            <div class="card-body text-center">
+                <h5 class="card-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Hutang Belum Dibayar
+                </h5>
+                <h2 class="card-text">Rp {{ "{:,.0f}".format(total_debt).replace(',', '.') }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card bg-success">
+            <div class="card-body text-center">
+                <h5 class="card-title">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Hutang Sudah Dibayar
+                </h5>
+                <h2 class="card-text">Rp {{ "{:,.0f}".format(total_paid).replace(',', '.') }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card bg-info">
+            <div class="card-body text-center">
+                <h5 class="card-title">
+                    <i class="fas fa-calculator me-2"></i>
+                    Total Hutang
+                </h5>
+                <h2 class="card-text">Rp {{ "{:,.0f}".format(total_all).replace(',', '.') }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label for="status" class="form-label">Filter Status</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="all" {{ 'selected' if status_filter == 'all' }}>Semua Hutang</option>
+                    <option value="unpaid" {{ 'selected' if status_filter == 'unpaid' }}>Belum Dibayar</option>
+                    <option value="paid" {{ 'selected' if status_filter == 'paid' }}>Sudah Dibayar</option>
+                    <option value="overdue" {{ 'selected' if status_filter == 'overdue' }}>Terlambat</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="sort" class="form-label">Urutkan Berdasarkan</label>
+                <select name="sort" id="sort" class="form-select">
+                    <option value="created_at" {{ 'selected' if sort_by == 'created_at' }}>Tanggal Dibuat</option>
+                    <option value="amount" {{ 'selected' if sort_by == 'amount' }}>Jumlah</option>
+                    <option value="due_date" {{ 'selected' if sort_by == 'due_date' }}>Tanggal Jatuh Tempo</option>
+                    <option value="creditor" {{ 'selected' if sort_by == 'creditor' }}>Pemberi Hutang</option>
+                    <option value="debtor_name" {{ 'selected' if sort_by == 'debtor_name' }}>Nama Pemilik Hutang</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="order" class="form-label">Urutan</label>
+                <select name="order" id="order" class="form-select">
+                    <option value="desc" {{ 'selected' if order == 'desc' }}>Menurun</option>
+                    <option value="asc" {{ 'selected' if order == 'asc' }}>Menaik</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="search" class="form-label">Cari</label>
+                <input type="text" name="search" id="search" class="form-control" 
+                       placeholder="Cari nama atau deskripsi..." value="{{ search }}">
+            </div>
+            
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary d-block w-100">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Debts List -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>
+            Daftar Hutang Anda ({{ debts|length }} item)
+        </h5>
+        <a href="{{ url_for('add_debt') }}" class="btn btn-success">
+            <i class="fas fa-plus me-1"></i>Tambah Hutang Baru
+        </a>
+    </div>
+    
+    <div class="card-body">
+        {% if debts %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Pemberi Hutang</th>
+                            <th>Nama Pemilik Hutang</th>
+                            <th>Jumlah</th>
+                            <th class="d-none d-md-table-cell">Tanggal Dibuat</th>
+                            <th class="d-none d-lg-table-cell">Deskripsi</th>
+                            <th>Jatuh Tempo</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for debt in debts %}
+                        <tr class="{{ 'table-success' if debt.is_paid else ('table-danger' if debt.is_overdue else '') }}">
+                            <td>
+                                <strong>{{ debt.creditor }}</strong>
+                            </td>
+                            <td>
+                                <strong>{{ debt.debtor_name }}</strong>
+                            </td>
+                            <td>
+                                <span class="fw-bold">{{ debt.formatted_amount }}</span>
+                            </td>
+                            <td class="d-none d-md-table-cell">
+                                <small class="text-muted">{{ debt.created_at.strftime('%d/%m/%Y') }}</small>
+                            </td>
+                            <td class="d-none d-lg-table-cell">
+                                {% if debt.description %}
+                                    {{ debt.description[:30] }}{% if debt.description|length > 30 %}...{% endif %}
+                                {% else %}
+                                    <em class="text-muted">-</em>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if debt.due_date %}
+                                    {% if debt.is_overdue and not debt.is_paid %}
+                                        <span class="text-danger fw-bold">
+                                            {{ debt.due_date.strftime('%d/%m/%Y') }}
+                                            <i class="fas fa-exclamation-triangle ms-1" title="Terlambat!"></i>
+                                        </span>
+                                    {% elif debt.is_due_soon %}
+                                        <span class="text-warning fw-bold">
+                                            {{ debt.due_date.strftime('%d/%m/%Y') }}
+                                            <i class="fas fa-clock ms-1" title="Jatuh tempo dalam {{ debt.days_until_due }} hari!"></i>
+                                        </span>
+                                    {% else %}
+                                        {{ debt.due_date.strftime('%d/%m/%Y') }}
+                                    {% endif %}
+                                {% else %}
+                                    <em class="text-muted">Tidak ada jatuh tempo</em>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if debt.is_paid %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check me-1"></i>Lunas
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-clock me-1"></i>Belum Lunas
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <form method="POST" action="{{ url_for('toggle_paid', debt_id=debt.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm {{ 'btn-warning' if debt.is_paid else 'btn-success' }}" 
+                                                title="{{ 'Tandai Belum Lunas' if debt.is_paid else 'Tandai Lunas' }}">
+                                            <i class="fas {{ 'fa-undo' if debt.is_paid else 'fa-check' }}"></i>
+                                        </button>
+                                    </form>
+                                    
+                                    <a href="{{ url_for('edit_debt', debt_id=debt.id) }}" 
+                                       class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    
+                                    <form method="POST" action="{{ url_for('delete_debt', debt_id=debt.id) }}" 
+                                          class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus hutang ini?')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">Tidak ada hutang ditemukan</h4>
+                <p class="text-muted">
+                    {% if search or status_filter != 'all' %}
+                        Coba sesuaikan filter atau kata kunci pencarian Anda.
+                    {% else %}
+                        Mulai dengan menambahkan hutang pertama Anda.
+                    {% endif %}
+                </p>
+                {% if not search and status_filter == 'all' %}
+                    <a href="{{ url_for('add_debt') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Tambah Hutang Pertama
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

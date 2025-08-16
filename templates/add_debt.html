@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Tambah Hutang Baru - Fajar Mandiri Store{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-plus me-2"></i>
+                    Tambah Hutang Baru
+                </h4>
+            </div>
+            
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.creditor.label(class="form-label") }}
+                        {{ form.creditor(class="form-control" + (" is-invalid" if form.creditor.errors else "")) }}
+                        {% if form.creditor.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.creditor.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Masukkan nama toko atau orang yang memberikan hutang.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.debtor_name.label(class="form-label") }}
+                        {{ form.debtor_name(class="form-control" + (" is-invalid" if form.debtor_name.errors else "")) }}
+                        {% if form.debtor_name.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.debtor_name.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Masukkan nama orang yang memiliki hutang.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.amount.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            {{ form.amount(class="form-control" + (" is-invalid" if form.amount.errors else ""), min="1000", placeholder="Contoh: 50000") }}
+                            {% if form.amount.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.amount.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-text">Masukkan total jumlah hutang (minimal Rp 1.000, hanya angka tanpa titik atau koma).</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="3") }}
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.description.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Opsional: Tambahkan detail barang/jasa yang dibeli.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.created_date.label(class="form-label") }}
+                        {{ form.created_date(class="form-control" + (" is-invalid" if form.created_date.errors else ""), id="created_date_input") }}
+                        {% if form.created_date.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.created_date.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            Kapan hutang ini dibuat? (Kosongkan untuk hari ini)
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setCreatedDateToday()">Hari Ini</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="setCreatedDateYesterday()">Kemarin</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="setCreatedDateLastWeek()">Minggu Lalu</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.due_date.label(class="form-label") }}
+                        {{ form.due_date(class="form-control" + (" is-invalid" if form.due_date.errors else ""), id="due_date_input") }}
+                        {% if form.due_date.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.due_date.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            Opsional: Kapan hutang ini jatuh tempo?
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setDateToday()">Hari Ini</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="setDateNextWeek()">+1 Minggu</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="setDateNextMonth()">+1 Bulan</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times me-1"></i>Batal
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Tambah Hutang
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set minimum date to today for due date
+    const dueDateInput = document.getElementById('due_date_input');
+    if (dueDateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dueDateInput.setAttribute('min', today);
+    }
+    
+    // Format amount input - remove decimals for easier input
+    const amountInput = document.getElementById('amount');
+    if (amountInput) {
+        // Remove step and allow whole numbers only
+        amountInput.removeAttribute('step');
+        amountInput.addEventListener('input', function() {
+            // Remove any non-digit characters 
+            let value = this.value.replace(/[^\d]/g, '');
+            if (value && value.length > 0) {
+                // Prevent values less than minimum
+                let numValue = parseInt(value);
+                if (numValue >= 1000) {
+                    // Format with thousand separators for display
+                    this.value = numValue.toLocaleString('id-ID');
+                } else {
+                    this.value = value;
+                }
+            }
+        });
+        
+        // On blur, clean the value for submission
+        amountInput.addEventListener('blur', function() {
+            let cleanValue = this.value.replace(/[^\d]/g, '');
+            if (cleanValue) {
+                this.value = cleanValue;
+            }
+        });
+        
+        // On focus, show clean number for editing
+        amountInput.addEventListener('focus', function() {
+            let cleanValue = this.value.replace(/[^\d]/g, '');
+            if (cleanValue) {
+                this.value = cleanValue;
+            }
+        });
+    }
+});
+
+// Quick date setting functions
+function setDateToday() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('due_date_input').value = today;
+}
+
+function setDateNextWeek() {
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    document.getElementById('due_date_input').value = nextWeek.toISOString().split('T')[0];
+}
+
+function setDateNextMonth() {
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    document.getElementById('due_date_input').value = nextMonth.toISOString().split('T')[0];
+}
+
+// Created date setting functions
+function setCreatedDateToday() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('created_date_input').value = today;
+}
+
+function setCreatedDateYesterday() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    document.getElementById('created_date_input').value = yesterday.toISOString().split('T')[0];
+}
+
+function setCreatedDateLastWeek() {
+    const lastWeek = new Date();
+    lastWeek.setDate(lastWeek.getDate() - 7);
+    document.getElementById('created_date_input').value = lastWeek.toISOString().split('T')[0];
+}
+</script>
+{% endblock %}
